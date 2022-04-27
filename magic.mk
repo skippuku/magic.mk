@@ -1,14 +1,37 @@
-ifndef SRC
-    $(error SRC must be defined.)
+PROFILE := $(filter-out all,$(firstword $(MAKECMDGOALS)))
+ifeq (,$(PROFILE))
+    ifndef MAGIC_DEFAULT_PROFILE
+        $(error No profile and MAGIC_DEFAULT_PROFILE is not defined)
+    endif
+    PROFILE := $(MAGIC_DEFAULT_PROFILE)
+    MAKECMDGOALS := $(PROFILE)
 endif
 
-BUILDDIR ?= build
-OBJDIR := $(BUILDDIR)/$(PROFILE)
-DEPFILE ?= $(BUILDDIR)/deps.d
-DEPGENFLAGS ?= -MM
+ifeq ($(flavor PROFILE.$(PROFILE)), undefined)
+    $(error Invalid profile: $(PROFILE))
+endif
 
-getobjpath = $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(notdir $(1)))))
-OBJ = $(call getobjpath,$(SRC))
+ifndef SRC
+    $(info SRC is not defined.)
+endif
+
+$(eval $(PROFILE.$(PROFILE)))
+
+.PHONY: $(MAKECMDGOALS)
+$(MAKECMDGOALS): $(MAGIC_TARGET)
+
+BUILDDIR ?= build
+PROFILEDIR ?= $(PROFILE)
+DEPFILE ?= $(BUILDDIR)/deps.d
+OBJDIR := $(BUILDDIR)/$(PROFILEDIR)
+
+DEPGENFLAGS ?= -MM
+DEPGEN.c = $(CC) $(CFLAGS) $(DEPGENFLAGS)
+DEPGEN.cpp = $(CXX) $(CXXFLAGS) $(DEPGENFLAGS)
+DEPGEN.cc = $(DEPGEN.cpp)
+
+getobj = $(addsuffix .o,$(basename $(notdir $(1))))
+OBJ := $(addprefix $(OBJDIR)/,$(call getobj,$(SRC)))
 
 define \n
 
@@ -18,20 +41,13 @@ endef
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-DEPGEN.c = $(CC) $(CFLAGS) $(DEPGENFLAGS)
-DEPGEN.cpp = $(CXX) $(CXXFLAGS) $(DEPGENFLAGS)
-DEPGEN.cc = $(DEPGEN.cpp)
-
 $(DEPFILE): $(MAKEFILE_LIST) | $(OBJDIR)
 	> $(DEPFILE)
-	$(foreach f,$(SRC),$(DEPGEN$(suffix $(f))) -MT '$(call getobjpath,$(f)) $(DEPFILE)' $(f) >> $(DEPFILE)$(\n))
+	$(foreach f,$(SRC),$(DEPGEN$(suffix $(f))) -MT '$$(OBJDIR)/$(call getobj,$(f)) $(DEPFILE)' $(f) >> $(DEPFILE)$(\n))
 
 $(OBJ):
 	$(COMPILE$(suffix $<)) $< $(OUTPUT_OPTION)
 
-clean:
-	$(RM) $(DEPFILE) $(OBJ)
-
-ifneq ($(MAKECMDGOALS),clean)
+ifndef MAGIC_NODEP
     include $(DEPFILE)
 endif

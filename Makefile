@@ -1,45 +1,45 @@
-SRC = test/hello.c test/plusplus.cpp
+SRC := test/hello.c test/plusplus.cpp
 
-.DEFAULT_GOAL := all
-.PHONY: all
-ifdef PROFILE
-ifeq ($(PROFILE),debug)
-    CFLAGS := -g
-else ifeq ($(PROFILE),release)
-    CFLAGS := -O2
-    LDFLAGS := -s
-else
-    $(error Invalid profile: $(PROFILE))
-endif
-CXXFLAGS := $(CFLAGS) -std=c++11
-CFLAGS += -std=gnu99
+MAGIC_DEFAULT_PROFILE := debug
+
+define PROFILE.debug
+  MAGIC_TARGET := all
+  CFLAGS += -g
+endef
+
+define PROFILE.release
+  MAGIC_TARGET := all
+  CFLAGS += -O2
+  LDFLAGS += -s
+endef
+
+define PROFILE.clean
+  MAGIC_NODEP := 1
+endef
+
+define PROFILE.run
+  PROFILE := debug
+  MAGIC_TARGET :=
+endef
 
 include magic.mk
 
-EXEDIR := $(OBJDIR)
-EXE := $(addprefix $(EXEDIR)/,$(basename $(notdir $(SRC))))
+CXXFLAGS := $(CFLAGS) -std=c++11
+CFLAGS += -std=gnu99
+
+EXEDIR = $(OBJDIR)
+EXE := $(OBJ:%.o=%)
+
+.PHONY: all clean
 
 all: $(EXE)
-	@echo "$(PROFILE) build is complete."
+	@echo "$(PROFILE) build complete."
+
+run: $(EXE)
+	$(foreach @,$(EXE),./$@ $(ARGS) $(\n))
 
 $(EXE): %: %.o
 	$(CC) $^ $(LDFLAGS) -o $@
-else # PROFILE
-ifeq ($(MAKECMDGOALS),clean)
-    MAKECMDGOALS :=
-    TARGET := clean
-else
-    ifeq (,$(filter-out all,$(MAKECMDGOALS)))
-        MAKECMDGOALS := debug
-    endif
-    TARGET := $(MAKECMDGOALS)
-endif
-.PHONY: $(TARGET)
-all: $(TARGET)
 
 clean:
-	rm -rf `find build/ -name "*.[od]"`
-
-$(MAKECMDGOALS):
-	@$(MAKE) PROFILE=$(MAKECMDGOALS) --no-print-directory
-endif # PROFILE
+	rm -f `find build/ -name "*.[od]"`
