@@ -1,16 +1,25 @@
 SRC := test/hello.c test/plusplus.cpp
 
+BUILDDIR := obj
 MAGIC_DEFAULT_PROFILE := debug
 
 define PROFILE.debug
-  MAGIC_TARGET := all
+  MAGIC_TARGET := build
   CFLAGS += -g
+  EXE_PREFIX := db_
 endef
 
 define PROFILE.release
-  MAGIC_TARGET := all
+  MAGIC_TARGET := build
   CFLAGS += -O2
   LDFLAGS += -s
+  EXE_PREFIX := r_
+endef
+
+define PROFILE.profile
+  MAGIC_TARGET := build
+  CFLAGS += -O2 -g
+  EXE_PREFIX := p_
 endef
 
 define PROFILE.clean
@@ -18,8 +27,8 @@ define PROFILE.clean
 endef
 
 define PROFILE.run
-  PROFILE := debug
-  MAGIC_TARGET :=
+  $(PROFILE.debug)
+  PROFILEDIR := debug
 endef
 
 include magic.mk
@@ -27,19 +36,19 @@ include magic.mk
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=gnu99
 
-EXEDIR = $(OBJDIR)
-EXE := $(OBJ:%.o=%)
+EXEDIR := .
+EXE := $(addprefix $(EXEDIR)/$(EXE_PREFIX),$(basename $(notdir $(SRC))))
 
-.PHONY: all clean
+.PHONY: build clean
 
-all: $(EXE)
+build: $(EXE)
 	@echo "$(PROFILE) build complete."
 
 run: $(EXE)
 	$(foreach @,$(EXE),./$@ $(ARGS) $(\n))
 
-$(EXE): %: %.o
+$(EXE): $(EXEDIR)/$(EXE_PREFIX)%: $(OBJDIR)/%.o
 	$(CC) $^ $(LDFLAGS) -o $@
 
 clean:
-	rm -f `find build/ -name "*.[od]"`
+	rm -f `find $(BUILDDIR)/ -name "*.[od]"`

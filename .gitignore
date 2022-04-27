@@ -1,1 +1,4 @@
-build/
+obj/
+db_*
+r_*
+p_*

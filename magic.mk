@@ -1,7 +1,7 @@
 PROFILE := $(filter-out all,$(firstword $(MAKECMDGOALS)))
 ifeq (,$(PROFILE))
     ifndef MAGIC_DEFAULT_PROFILE
-        $(error No profile and MAGIC_DEFAULT_PROFILE is not defined)
+        $(error No profile and MAGIC_DEFAULT_PROFILE is not defined.)
     endif
     PROFILE := $(MAGIC_DEFAULT_PROFILE)
     MAKECMDGOALS := $(PROFILE)
@@ -12,7 +12,7 @@ ifeq ($(flavor PROFILE.$(PROFILE)), undefined)
 endif
 
 ifndef SRC
-    $(info SRC is not defined.)
+    $(warning magic.mk is included, but SRC is not defined.)
 endif
 
 $(eval $(PROFILE.$(PROFILE)))
