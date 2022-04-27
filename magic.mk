@@ -2,8 +2,9 @@ ifndef SRC
     $(error SRC must be defined.)
 endif
 
-OBJDIR := build/$(PROFILE)
-DEPFILE ?= build/deps.d
+BUILDDIR ?= build
+OBJDIR := $(BUILDDIR)/$(PROFILE)
+DEPFILE ?= $(BUILDDIR)/deps.d
 DEPGENFLAGS ?= -MM
 
 getobjpath = $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(notdir $(1)))))

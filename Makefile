@@ -1,5 +1,6 @@
 SRC = test/hello.c test/plusplus.cpp
 
+.DEFAULT_GOAL := all
 .PHONY: all
 ifdef PROFILE
 ifeq ($(PROFILE),debug)
@@ -13,14 +14,15 @@ endif
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=gnu99
 
-EXE := $(addprefix $(EXE_PREFIX),$(basename $(notdir $(SRC))))
+include magic.mk
+
+EXEDIR := $(OBJDIR)
+EXE := $(addprefix $(EXEDIR)/,$(basename $(notdir $(SRC))))
 
 all: $(EXE)
 	@echo "$(PROFILE) build is complete."
 
-include magic.mk
-
-$(EXE): $(EXE_PREFIX)%: $(OBJDIR)/%.o
+$(EXE): %: %.o
 	$(CC) $^ $(LDFLAGS) -o $@
 else # PROFILE
 ifeq ($(MAKECMDGOALS),clean)
