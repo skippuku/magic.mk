@@ -11,10 +11,6 @@ ifeq ($(flavor PROFILE.$(PROFILE)), undefined)
     $(error Invalid profile: $(PROFILE))
 endif
 
-ifndef SRC
-    $(warning magic.mk is included, but SRC is not defined.)
-endif
-
 $(eval $(PROFILE.$(PROFILE)))
 
 .PHONY: $(MAKECMDGOALS)
@@ -22,32 +18,23 @@ $(MAKECMDGOALS): $(MAGIC_TARGET)
 
 BUILDDIR ?= build
 PROFILEDIR ?= $(PROFILE)
-DEPFILE ?= $(BUILDDIR)/deps.d
 OBJDIR := $(BUILDDIR)/$(PROFILEDIR)
+DEPGENFLAGS ?= -MMD
 
-DEPGENFLAGS ?= -MM
-DEPGEN.c = $(CC) $(CFLAGS) $(DEPGENFLAGS)
-DEPGEN.cpp = $(CXX) $(CXXFLAGS) $(DEPGENFLAGS)
-DEPGEN.cc = $(DEPGEN.cpp)
+getobj = $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(notdir $(1)))))
+OBJ := $(call getobj,$(SRC))
+DEPS := $(OBJ:%.o=%.d)
 
-getobj = $(addsuffix .o,$(basename $(notdir $(1))))
-OBJ := $(addprefix $(OBJDIR)/,$(call getobj,$(SRC)))
-
-define \n
-
-
-endef
+$(foreach f,$(SRC),$(eval $(call getobj,$f): $f))
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-$(DEPFILE): $(MAKEFILE_LIST) | $(OBJDIR)
-	> $(DEPFILE)
-	$(foreach f,$(SRC),$(DEPGEN$(suffix $(f))) -MT '$$(OBJDIR)/$(call getobj,$(f)) $(DEPFILE)' $(f) >> $(DEPFILE)$(\n))
+$(DEPS): %.d: %.o
 
-$(OBJ):
-	$(COMPILE$(suffix $<)) $< $(OUTPUT_OPTION)
+$(OBJ): | $(OBJDIR)
+	$(COMPILE$(suffix $<)) $(DEPGENFLAGS) $< $(OUTPUT_OPTION)
 
 ifndef MAGIC_NODEP
-    include $(DEPFILE)
+    include $(DEPS)
 endif

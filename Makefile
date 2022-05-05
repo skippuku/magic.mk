@@ -44,6 +44,11 @@ EXE := $(addprefix $(EXEDIR)/$(EXE_PREFIX),$(basename $(notdir $(SRC))))
 build: $(EXE)
 	@echo "$(PROFILE) build complete."
 
+define \n
+
+
+endef
+
 run: $(EXE)
 	$(foreach @,$(EXE),./$@ $(ARGS) $(\n))
 
